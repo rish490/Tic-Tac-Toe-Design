@@ -1,0 +1,238 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <utility>
+using namespace std;
+
+class Symbol{
+    public:
+  char c;
+  Symbol(char c){
+      this->c=c;
+  }
+};
+
+class PlayerStrategy{
+    public:
+  virtual pair<int,int> getMove()=0;  
+};
+
+class MoveResult{
+  public:
+  string result;
+  MoveResult(string result){
+      this->result=result;
+  }
+ 
+};
+
+class HumanStrategy: public PlayerStrategy {
+    public:
+    pair<int,int>getMove(){
+        cout<<"Please enter the move i,j"<<endl;
+        int x,y;
+        cin>>x>>y;
+        return {x,y};
+    }
+};
+
+class Board{
+  int size;
+  vector<vector<char>>board;
+public:
+Board(int n,Symbol* empty){
+    size=n;
+    for(int i=0;i<n;i++){
+        vector<char>temp;
+        for(int j=0;j<n;j++){
+            temp.push_back(empty->c);
+        }
+        board.push_back(temp);
+    }
+}
+
+bool isValidMove(int i,int j){
+    if(i>=0&&i<size&&j>=0&&j<size&&board[i][j]=='+'){
+      return true;   
+    }
+    return false;
+}
+
+ bool win(int row, int col, char symbol) {
+        // Check row, column, and diagonals
+        bool win = true;
+        for (int i = 0; i < size; i++) {
+            if (board[row][i] != symbol) win = false;
+        }
+        if (win) return true;
+
+        win = true;
+        for (int i = 0; i < size; i++) {
+            if (board[i][col] != symbol) win = false;
+        }
+        if (win) return true;
+
+        if (row == col) {
+            win = true;
+            for (int i = 0; i < size; i++) {
+                if (board[i][i] != symbol) win = false;
+            }
+            if (win) return true;
+        }
+
+        if (row + col == size - 1) {
+            win = true;
+            for (int i = 0; i < size; i++) {
+                if (board[i][size - 1 - i] != symbol) win = false;
+            }
+            if (win) return true;
+        }
+
+        return false;
+    }
+    
+    bool draw(int i,int j,char c) {
+        for (auto& row : board) {
+            for (auto& cell : row) {
+                if (cell == '+') return false;
+            }
+        }
+        return true;
+    }
+
+MoveResult* attemptMove(int i,int j,Symbol* symbol){
+    if(isValidMove(i,j)==false){
+        MoveResult* result=new MoveResult("Invalid move");
+        return result;
+    }
+    board[i][j]=symbol->c;
+    if(win(i,j,symbol->c)==true){
+        MoveResult* result=new MoveResult("Winning move");
+        return result;
+    }
+    if(draw(i,j,symbol->c)==true){
+        MoveResult* result=new MoveResult("Draw move");
+        return result;
+    }
+    
+    MoveResult* result=new MoveResult("Valid move");
+    return result;
+    
+}
+
+void printBoard(){
+    
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            cout<<board[i][j]<<" ";
+        }
+        cout<<endl;
+    }
+}
+
+
+};
+class Player {
+	PlayerStrategy* strategy;
+	Symbol* symbol;
+public:
+	string name;
+	Player(string name,PlayerStrategy* strategy,Symbol* symbol) {
+		this->name=name;
+		this->strategy=strategy;
+		this->symbol=symbol;
+	}
+	
+	MoveResult* makeMove(Board* board){
+	    pair<int,int>index=strategy->getMove();
+	    MoveResult* moveResult=board->attemptMove(index.first,index.second,symbol);
+	    return moveResult;
+	}
+};
+
+class GameContext{
+  vector<Player*>players;
+  int currentPlayerToMove;
+  Board* board;
+  public:
+  GameContext(vector<Player*>players,int n){
+      
+      Symbol* empty=new Symbol('+');
+      
+      board=new Board(n,empty);
+      currentPlayerToMove=0;
+      this->players=players;
+      
+  }
+  
+  void play(){
+      bool gameOver=false;
+      while(gameOver==false){
+          if(currentPlayerToMove==0){
+              //first player to move 
+              Player* currentPlayer=players[0];
+              board->printBoard();
+              MoveResult* result=currentPlayer->makeMove(board);
+              if(result->result=="Invalid move"){
+                  cout<<"try again please"<<endl;
+                  continue;
+              }
+              if(result->result=="Winning move"){
+                 cout<<"you win amazing"<<endl;
+                 gameOver=true;
+                 
+              }
+              if(result->result=="Draw move"){
+                 cout<<"match tied"<<endl;
+                 gameOver=true;
+                 
+              }
+              if(result->result=="Valid move"){
+                 
+                 currentPlayerToMove=1;
+                 continue;
+              }
+          }
+          if(currentPlayerToMove==1){
+              //first player to move 
+              Player* currentPlayer=players[1];
+              board->printBoard();
+              MoveResult* result=currentPlayer->makeMove(board);
+              if(result->result=="Invalid move"){
+                  cout<<"try again please"<<endl;
+                  continue;
+              }
+              if(result->result=="Winning move"){
+                 cout<<"you win amazing"<<endl;
+                 gameOver=true;
+                 
+              }
+              if(result->result=="Draw move"){
+                 cout<<"match tied"<<endl;
+                 gameOver=true;
+                 
+              }
+              if(result->result=="Valid move"){
+                 
+                 currentPlayerToMove=0;
+                 continue;
+              }
+          }
+      }
+  }
+};
+int main()
+{
+    PlayerStrategy* humanStrategy=new HumanStrategy();
+    Symbol* symbol1=new Symbol('*');
+    Symbol* symbol2=new Symbol('-');
+	Player* player1=new Player("Rishabh",humanStrategy,symbol1);
+	Player* player2=new Player("Vijender",humanStrategy,symbol2);
+	vector<Player*>players;
+	players.push_back(player1);
+	players.push_back(player2);
+	GameContext* game=new GameContext(players,3);
+	game->play();
+	
+	return 0;
+}
